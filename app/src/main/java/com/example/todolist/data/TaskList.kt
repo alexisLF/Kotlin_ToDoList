@@ -1,9 +1,11 @@
 package com.example.todolist.data
 
-class TaskList {
-    private val tasks = mutableListOf<Task>()
+import com.example.todolist.model.TaskEntity
 
-    fun addTask(task: Task) {
+class TaskList {
+    private val tasks = mutableListOf<TaskEntity>()
+
+    fun addTask(task: TaskEntity) {
         tasks.add(task)
     }
 

@@ -1,71 +1,51 @@
 package com.example.todolist
 
-import AddTask
-import ShowTasks
-import com.example.todolist.data.Task
-import com.example.todolist.data.TaskList
+import AddTaskScreen
+import ShowTasksScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.todolist.data.TasksViewModel
+import com.example.todolist.model.TaskEntity
+import com.example.todolist.viewmodel.TasksViewModel
 
 class MainActivity : ComponentActivity() {
-    private val notesViewModel by viewModels<TasksViewModel>()
+    private val tasksViewModel: TasksViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MyApp(notesViewModel)
+            MyApp(tasksViewModel)
         }
     }
 }
 
-fun main() {
-    val taskList = TaskList()
-
-    // Ajout de quelques tâches à la liste
-    taskList.addTask(Task("Faire les courses", "Acheter des fruits et légumes"))
-    taskList.addTask(Task("Réunion de travail", "Préparer la présentation"))
-    taskList.addTask(Task("Faire du sport", "30 minutes de jogging"))
-
-    // Affichage initial des tâches
-    println("Avant mise à jour:")
-    taskList.displayTasks()
-
-    // Marquer la première tâche comme terminée
-    taskList.markTaskAsDone(0)
-
-    // Affichage après la mise à jour
-    println("\nAprès mise à jour:")
-    taskList.displayTasks()
-}
-
 @Composable
-fun MyApp(notesViewModel: TasksViewModel) {
+fun MyApp(tasksViewModel: TasksViewModel) {
     val navController = rememberNavController()
+    val tasks by tasksViewModel.readAllData.observeAsState(emptyList())
     NavHost(navController = navController, startDestination = "home") {
-        composable("home") { HomeScreen({ navController.navigate("add") }, notesViewModel) }
-        composable("add") { AddScreen({ navController.navigate("home") }, notesViewModel) }
-    }
-}
-
-@Composable
-fun HomeScreen(onNavigate: () -> Unit, notesViewModel: TasksViewModel) {
-    ShowTasks(notesViewModel.tasks, onNavigate, onCheckedTask = { task, checked ->
-        notesViewModel.changeTaskChecked(task, checked)
-    },) {
-        notesViewModel.removeTask(it)
-    }
-}
-
-@Composable
-fun AddScreen(onNavigate: () -> Unit, notesViewModel:TasksViewModel) {
-    AddTask(onNavigate) { title: String, desc: String ->
-        notesViewModel.addTask(title, desc)
+        composable("home") {
+            ShowTasksScreen(
+                tasks, { navController.navigate("add") },
+                onCheckedTask = { task, checked ->
+                    task.isDone = checked
+                    tasksViewModel.updateTask(task)
+                },
+            ) {
+                tasksViewModel.removeTask(it)
+            }
+        }
+        composable("add") {
+            AddTaskScreen({ navController.navigate("home") }) { task: TaskEntity ->
+                tasksViewModel.addTask(task)
+            }
+        }
     }
 }
